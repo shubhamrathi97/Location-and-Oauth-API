@@ -1,0 +1,5 @@
+*.pyc
+env/
+migrations/
+__pycache__
+
