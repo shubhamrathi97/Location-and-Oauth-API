@@ -88,6 +88,7 @@ def get_using_postgres(lat, lng):
 
 """*****************************************************
 Request URL: <url>/get_using_self
+Example: localhost:5000/get_using_self/23.265156/77.403949
 Request Type: GET
 Request Input: Params lat, lng
 Expected Output:  JSON Object
@@ -103,4 +104,14 @@ Developed By Shubham Rathi <shubham.rathi97@gmail.com>
 ******************************************************"""        
 @app.route('/get_using_self/<lat>/<lng>', methods=['GET'])
 def get_using_self(lat, lng):
-    return json.dumps()
+    lat = float(lat)
+    lng = float(lng)                                                 
+    distance_func = func.sqrt((111.12 * (location.lat - lat)) * (111.12 * (location.lat - lat)) + (111.12 * (location.lng - lng) * func.cos(lat / 92.215)) * (111.12 * (location.lng - lng) * func.cos(lat / 92.215)));    
+    query = db.session.query(location, distance_func).filter(distance_func < 5).order_by(distance_func)
+    result = query.all()
+    mapped = []
+    for row in result:
+        #print(row[0].__dict__)
+        #print(row[1])
+        mapped.append({"name":row[0].__dict__["name"]})
+    return json.dumps(mapped)
