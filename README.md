@@ -10,6 +10,7 @@
 * `python db.py db init`
 * `python db.py db migrate`
 * `python db.py db upgrade`
+* `python run.py`
 
 # API DOC
 **Add Location**
