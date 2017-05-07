@@ -1,15 +1,15 @@
 # Location-and-Oauth-API
 
 **To Run**
-*`git clone git@github.com:shubhamrathi97/Location-and-Oauth-API.git`
-*`cd Location-and-Oauth-API`
-*`open config.py and Setup your postgres db name, host, password`
-*`mkdir env and virtualenv env`
-*`Go to env/scripts and run activate`
-*`pip install -r requirement.txt`
-*`python db.py db init`
-*`python db.py db migrate`
-*`python db.py db upgrade`
+* `git clone git@github.com:shubhamrathi97/Location-and-Oauth-API.git`
+* `cd Location-and-Oauth-API`
+* `open config.py and Setup your postgres db name, host, password`
+* `mkdir env and virtualenv env`
+* `Go to env/scripts and run activate`
+* `pip install -r requirement.txt`
+* `python db.py db init`
+* `python db.py db migrate`
+* `python db.py db upgrade`
 
 # API DOC
 **Add Location**
