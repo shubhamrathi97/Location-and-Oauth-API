@@ -58,7 +58,8 @@
   * **Code:** 200 <br />
     **Content:** `[{"name": "bhopal accurate"},{"name": "bhopal accurate 2"}]`
  
-**Get location using mathematical computation **
+ 
+**Get location using mathematical computation**
 ----
   Get data of location in radius of 5kms of given location. Used custom logic to get data
 
