@@ -25,6 +25,17 @@ class location(db.Model):
         self.lat = lat
         self.lng = lng
 
+class oauth(db.Model):
+    id = db.Column(db.Integer(), primary_key=True)
+    client_id = db.Column(db.String(255), unique=True)
+    client_secret = db.Column(db.String(255))
+    redirect_uri = db.Column(db.String(255))
+    
+    def __init__(self, client_id, client_secret, redirect_uri):
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
+
 """*****************************************************
 Request URL: <url>/post_location
 Request Type: Post
@@ -119,6 +130,35 @@ def get_using_self(lat, lng):
 
 
 """*****************************************************
+Request URL: <url>/add_oauth
+Request Type: Post
+Request Input: JSON Object
+        {
+            "client_id":"ASDSfjdsfhj121432423",
+            "client_secret":"147652268+2665235421",
+            "redirect_uri":"www.shubhamrathi.me"
+        }
+Expected Output: "Successfully Added"
+Developed By Shubham Rathi <shubham.rathi97@gmail.com>        
+******************************************************"""        
+@app.route('/add_oauth',methods=['POST'])
+def add_oauth():
+    raw_dict = request.get_json(force=True)
+    try:
+        print(raw_dict)
+        temp = oauth(raw_dict["client_id"],raw_dict["client_secret"],raw_dict["redirect_uri"])
+        db.session.add(temp)
+        db.session.commit()
+        return "Successfully Added", 201
+            
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        resp = jsonify({"error": str(e)})
+        resp.status_code = 403
+        return resp
+
+
+"""*****************************************************
 Request URL: <url>/oauth/authorize
 Example: localhost:5000/oauth/authorize?response_type=code&client_id=123456789&redirect_uri=localhost.com&scope=read
 Request Type: GET
@@ -133,10 +173,17 @@ Developed By Shubham Rathi <shubham.rathi97@gmail.com>
 ******************************************************"""        
 @app.route('/oauth/authorize', methods=['GET'])
 def authorize():
-    #Check for client id in database. if yes then
-    #Check for redirect uri in database, if match then make auth code
-    authorization_code = jwt.encode({'client_id': request.args.get("client_id")}, 'Super_duper_secret', algorithm='HS256') 
-    return "http://{0}/callback?code={1}".format(request.args.get("redirect_uri"),authorization_code.decode()), 302
+    auth_details = oauth.query.filter_by(client_id= request.args.get("client_id")).first()
+    #Check for client_id in db
+    if auth_details.__dict__["client_id"]:
+        #Check for redirect uri in db, if match then make auth code
+        if auth_details.__dict__["redirect_uri"] == request.args.get("redirect_uri"):
+            authorization_code = jwt.encode({'client_id': request.args.get("client_id")}, 'Super_duper_secret', algorithm='HS256') 
+            return "http://{0}/callback?code={1}".format(request.args.get("redirect_uri"),authorization_code.decode()), 302
+        return jsonify({"error":"Invalid Redirect URI"}), 400
+    return jsonify({"error":"Invalid Client Id"}), 400 
+        
+
 
 """*****************************************************
 Request URL: <url>/oauth/token
@@ -154,22 +201,29 @@ Developed By Shubham Rathi <shubham.rathi97@gmail.com>
 ******************************************************"""        
 @app.route('/oauth/token', methods=['GET'])
 def token():
-    """if not request.args.get("client_id"):
-        print("Invalid Client_id")
-    elif :     
-    """
+    auth_details = oauth.query.filter_by(client_id= request.args.get("client_id")).first()
+    if not auth_details:
+        return jsonify({"error":"Client_id Not Found"}), 404 
+    
+    if auth_details.__dict__["redirect_uri"] != request.args.get("redirect_uri"):
+        return jsonify({"error":"Invalid redirect_uri"}), 400
+    
+    if auth_details.__dict__["client_secret"] != request.args.get("client_secret"):
+        print(auth_details.__dict__["client_secret"])
+        print(request.args.get("client_secret"))
+        return jsonify({"error":"Invalid client_secret"}), 400        
     
     if request.args.get("grant_type") == "authorization_code":
         authorization_code_decoded = jwt.decode(request.args.get("code"), 'Super_duper_secret', algorithms=['HS256'])
         if authorization_code_decoded["client_id"] != request.args.get("client_id"):
-            print("Error")
-            pass
+            return jsonify({"error":"Invalid authorization code"}), 400
+
     elif request.args.get("grant_type") == "refresh_token":
         refresh_token_decoded = jwt.decode(request.args.get("refresh_token"), 'Super_duper_secret', algorithms=['HS256'])
         if refresh_token_decoded["type"] != "refresh":
-            print("Invalid Refresh Token")
+            return jsonify({"error":"Invalid refresh token"}), 400
     else:
-        print("Invalid Request")
+        return jsonify({"error":"Invalid Request"}), 400
 
     access_token = jwt.encode({'client_id': request.args.get("client_id"),
                         'exp': datetime.utcnow(),
