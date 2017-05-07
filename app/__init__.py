@@ -2,8 +2,8 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func, Index
-import json
-
+from datetime import datetime, timedelta
+import json, jwt 
 #Define App
 app = Flask(__name__)
 #Configuring app from config.py file
@@ -115,3 +115,76 @@ def get_using_self(lat, lng):
         #print(row[1])
         mapped.append({"name":row[0].__dict__["name"]})
     return json.dumps(mapped)
+
+
+
+"""*****************************************************
+Request URL: <url>/oauth/authorize
+Example: localhost:5000/oauth/authorize?response_type=code&client_id=123456789&redirect_uri=localhost.com&scope=read
+Request Type: GET
+Request Input: Params response type, redirect URI, client id, scope
+Expected Output:  JSON Object
+        {
+        "authorization_code": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiIxMjM0NTY3ODkifQ.pSnldg0lX4gom3nf_Cey04X3xYdSF2xGukQEkPKGwhY",
+        "client_id": "123456789",
+        "redirect_uri": "localhost.com"
+        }
+Developed By Shubham Rathi <shubham.rathi97@gmail.com>        
+******************************************************"""        
+@app.route('/oauth/authorize', methods=['GET'])
+def authorize():
+    #Check for client id in database. if yes then
+    #Check for redirect uri in database, if match then make auth code
+    authorization_code = jwt.encode({'client_id': request.args.get("client_id")}, 'Super_duper_secret', algorithm='HS256') 
+    return "http://{0}/callback?code={1}".format(request.args.get("redirect_uri"),authorization_code.decode()), 302
+
+"""*****************************************************
+Request URL: <url>/oauth/token
+Example: localhost:5000/oauth/token?client_id=12345645&client_secret=4585sd54das5a&grant_type=authorization_code&code=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiIxMjM0NTY3ODkifQ.pSnldg0lX4gom3nf_Cey04X3xYdSF2xGukQEkPKGwhY&redirect_uri=www.google.com
+Request Type: GET
+Request Input: Params grant type, redirect URI, client id, client secret, code
+Expected Output:  JSON Object
+        {
+          "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiIxMjM0NTY0NSIsImV4cCI6MTQ5NDEyODkzNCwiaWF0IjoxNDk0MTI4OTM0LCJ0eXBlIjoiYWNjZXNzIn0.IsLqkBcAM4Gk8yXWhg-kXpWZMA8pRYMkRWM7SsTJNQA",
+          "expires_in": "300000",
+          "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRfaWQiOiIxMjM0NTY0NSIsImV4cCI6MTQ5NDEyODkzNCwiaWF0IjoxNDk0MTI4OTM0LCJ0eXBlIjoicmVmcmVzaCJ9.xCv9QosOfjSQ_LvjBdFFmYDSPyMFtWkzJcEul6pJwIM",
+          "token_type": "Basic"
+        }  
+Developed By Shubham Rathi <shubham.rathi97@gmail.com>        
+******************************************************"""        
+@app.route('/oauth/token', methods=['GET'])
+def token():
+    """if not request.args.get("client_id"):
+        print("Invalid Client_id")
+    elif :     
+    """
+    
+    if request.args.get("grant_type") == "authorization_code":
+        authorization_code_decoded = jwt.decode(request.args.get("code"), 'Super_duper_secret', algorithms=['HS256'])
+        if authorization_code_decoded["client_id"] != request.args.get("client_id"):
+            print("Error")
+            pass
+    elif request.args.get("grant_type") == "refresh_token":
+        refresh_token_decoded = jwt.decode(request.args.get("refresh_token"), 'Super_duper_secret', algorithms=['HS256'])
+        if refresh_token_decoded["type"] != "refresh":
+            print("Invalid Refresh Token")
+    else:
+        print("Invalid Request")
+
+    access_token = jwt.encode({'client_id': request.args.get("client_id"),
+                        'exp': datetime.utcnow(),
+                        'iat': datetime.utcnow(),
+                        'type':'access'}, "Super_duper_secret" , algorithm='HS256')
+
+    refresh_token = jwt.encode({'client_id': request.args.get("client_id"),
+                        'exp': datetime.utcnow(),
+                        'iat': datetime.utcnow(),
+                        'type':'refresh'}, "Super_duper_secret" , algorithm='HS256')
+    
+    return jsonify({ 
+                        "access_token"  : access_token.decode(),
+                        "token_type"    : "Basic",
+                        "expires_in"    : "300000",
+                        "refresh_token" : refresh_token.decode(),
+                    })
+
