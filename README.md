@@ -19,11 +19,8 @@
 * **Data Params**
 
    **Required:**
-  '{
-     "name":"bhopal",
-     "lat":"23.258926",
-     "lng":"77.414120"
-   }'
+  'name, lat, lng '
+  **Example: ** '{"name":"bhopal", "lat":"23.258926", "lng":"77.414120" }'
    
 * **Success Response:**
 
